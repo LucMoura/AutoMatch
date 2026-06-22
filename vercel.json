@@ -1,0 +1,14 @@
+{
+  "buildCommand": "cd AutoMatch-Back && npm ci && npm run build && cd ../AutoMatch-Front && npm ci && npm run build -- --output-path=../dist --base-href=/",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.ts": {
+      "memory": 256,
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
