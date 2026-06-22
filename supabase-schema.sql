@@ -78,13 +78,19 @@ CREATE POLICY "cars_select_public" ON cars
   FOR SELECT USING (true);
 
 CREATE POLICY "cars_insert_admin" ON cars
-  FOR INSERT WITH CHECK (auth.role() = 'service_role');
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 CREATE POLICY "cars_update_admin" ON cars
-  FOR UPDATE USING (auth.role() = 'service_role');
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 CREATE POLICY "cars_delete_admin" ON cars
-  FOR DELETE USING (auth.role() = 'service_role');
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 -- Saved matches: user owns their matches
 CREATE POLICY "saved_matches_select_own" ON saved_matches

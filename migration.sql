@@ -87,15 +87,21 @@ CREATE POLICY "cars_select_public" ON cars
 
 DROP POLICY IF EXISTS "cars_insert_admin" ON cars;
 CREATE POLICY "cars_insert_admin" ON cars
-  FOR INSERT WITH CHECK (auth.role() = 'service_role');
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 DROP POLICY IF EXISTS "cars_update_admin" ON cars;
 CREATE POLICY "cars_update_admin" ON cars
-  FOR UPDATE USING (auth.role() = 'service_role');
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 DROP POLICY IF EXISTS "cars_delete_admin" ON cars;
 CREATE POLICY "cars_delete_admin" ON cars
-  FOR DELETE USING (auth.role() = 'service_role');
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 -- =============================================================
 -- 3. SAVED_MATCHES
