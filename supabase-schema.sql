@@ -156,6 +156,10 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'surname', '')
   );
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE WARNING 'handle_new_user: erro ao criar profile para %: %', NEW.id, SQLERRM;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
