@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -31,21 +31,25 @@ const cars = [
   { id: "premium-002", name: "Mercedes-Benz GLC", year: 2024, price: 379990, category: "Premium", engine: "2.0 Turbo 16V", power: "258 cv", consumption: "9,5 km/l", weight: "1.750 kg", ipva: 11399, insurance: 10000, maintenance: 5500, features: ["Ar-condicionado digital", "Bancos em couro", "Central multimídia 12\"", "Câmera 360°", "Piloto automático", "Teto solar panorâmico", "Som Burmester"], main_image: "https://images.unsplash.com/photo-1616422285627-4733a7d5e157?auto=format&fit=crop&w=800&q=80", thumbnail_images: ["https://images.unsplash.com/photo-1616422285627-4733a7d5e157?auto=format&fit=crop&w=400&q=80"] },
 ];
 
-for (const car of cars) {
-  const { data, error } = await supabase.from("cars").upsert(
-    {
-      ...car,
-      features: JSON.stringify(car.features),
-      thumbnail_images: JSON.stringify(car.thumbnail_images),
-    },
-    { onConflict: "id" },
-  );
+async function main() {
+  for (const car of cars) {
+    const { error } = await supabase.from("cars").upsert(
+      {
+        ...car,
+        features: JSON.stringify(car.features),
+        thumbnail_images: JSON.stringify(car.thumbnail_images),
+      },
+      { onConflict: "id" },
+    );
 
-  if (error) {
-    console.error(`Error inserting ${car.id} (${car.name}):`, error.message);
-  } else {
-    console.log(`✅ ${car.id} — ${car.name}`);
+    if (error) {
+      console.error(`Error inserting ${car.id} (${car.name}):`, error.message);
+    } else {
+      console.log(`✅ ${car.id} — ${car.name}`);
+    }
   }
+
+  console.log(`\n✨ Done! ${cars.length} cars inserted/updated.`);
 }
 
-console.log(`\n✨ Done! ${cars.length} cars inserted/updated.`);
+main().catch(console.error);
