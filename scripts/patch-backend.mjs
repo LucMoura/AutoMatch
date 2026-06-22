@@ -84,7 +84,10 @@ patchFile("AutoMatch-Back/src/middleware/auth.ts", [
 export async function requireAuth(`,
   ],
   [
-    `    if (error || !user) {
+    `  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
       res.status(401).json({ error: "Token inválido ou expirado" });
       return;
     }
