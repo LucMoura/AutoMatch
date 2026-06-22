@@ -25,11 +25,17 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
 CREATE POLICY "profiles_select_own" ON profiles
-  FOR SELECT USING (auth.uid() = id);
+  FOR SELECT USING (
+    auth.uid() = id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
 CREATE POLICY "profiles_update_own" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+  FOR UPDATE USING (
+    auth.uid() = id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
 CREATE POLICY "profiles_insert_own" ON profiles
@@ -134,7 +140,10 @@ CREATE POLICY "saved_matches_update_own" ON saved_matches
 
 DROP POLICY IF EXISTS "saved_matches_delete_own" ON saved_matches;
 CREATE POLICY "saved_matches_delete_own" ON saved_matches
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE USING (
+    auth.uid() = user_id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 -- =============================================================
 -- 4. TRIGGERS

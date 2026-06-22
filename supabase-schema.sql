@@ -63,12 +63,18 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cars ENABLE ROW LEVEL SECURITY;
 ALTER TABLE saved_matches ENABLE ROW LEVEL SECURITY;
 
--- Profiles: user can read/update own profile
+-- Profiles: user can read/update own profile; admin can read/update all
 CREATE POLICY "profiles_select_own" ON profiles
-  FOR SELECT USING (auth.uid() = id);
+  FOR SELECT USING (
+    auth.uid() = id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 CREATE POLICY "profiles_update_own" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+  FOR UPDATE USING (
+    auth.uid() = id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 CREATE POLICY "profiles_insert_trigger" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
@@ -103,7 +109,10 @@ CREATE POLICY "saved_matches_update_own" ON saved_matches
   FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "saved_matches_delete_own" ON saved_matches
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE USING (
+    auth.uid() = user_id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
 
 -- =============================================================
 -- TRIGGERS

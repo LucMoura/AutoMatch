@@ -102,23 +102,7 @@ export async function requireAuth(`,
   } catch {
     res.status(401).json({ error: "Token inválido ou expirado" });
   }`,
-    `    if (!error && user) {
-      req.userId = user.id;
-
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      req.userRole = (profile as { role: string } | null)?.role || "USER";
-      next();
-      return;
-    }
-  } catch {}
-
-  // Fallback: decode JWT directly (works without SUPABASE_SERVICE_KEY)
-  const payload = decodeJwtPayload(token);
+    `  const payload = decodeJwtPayload(token);
   if (!payload?.sub) {
     res.status(401).json({ error: "Token inválido ou expirado" });
     return;
@@ -127,7 +111,7 @@ export async function requireAuth(`,
   req.userId = payload.sub;
   req.userRole = "USER";
 
-  // Try to fetch actual role with user's token
+  // Fetch role with authenticated client (works without SUPABASE_SERVICE_KEY)
   try {
     const authClient = createAuthClient(token);
     const { data: profile } = await authClient
