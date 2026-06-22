@@ -57,6 +57,21 @@ CREATE INDEX idx_profiles_role ON profiles(role);
 CREATE INDEX idx_cars_category ON cars(category);
 
 -- =============================================================
+-- FUNCTIONS (SECURITY DEFINER to bypass RLS recursion)
+-- =============================================================
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN'
+  );
+$$;
+
+-- =============================================================
 -- ROW LEVEL SECURITY
 -- =============================================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -67,13 +82,13 @@ ALTER TABLE saved_matches ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "profiles_select_own" ON profiles
   FOR SELECT USING (
     auth.uid() = id
-    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+    OR is_admin()
   );
 
 CREATE POLICY "profiles_update_own" ON profiles
   FOR UPDATE USING (
     auth.uid() = id
-    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+    OR is_admin()
   );
 
 CREATE POLICY "profiles_insert_trigger" ON profiles
@@ -84,19 +99,13 @@ CREATE POLICY "cars_select_public" ON cars
   FOR SELECT USING (true);
 
 CREATE POLICY "cars_insert_admin" ON cars
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR INSERT WITH CHECK (is_admin());
 
 CREATE POLICY "cars_update_admin" ON cars
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR UPDATE USING (is_admin());
 
 CREATE POLICY "cars_delete_admin" ON cars
-  FOR DELETE USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR DELETE USING (is_admin());
 
 -- Saved matches: user owns their matches
 CREATE POLICY "saved_matches_select_own" ON saved_matches
@@ -111,7 +120,7 @@ CREATE POLICY "saved_matches_update_own" ON saved_matches
 CREATE POLICY "saved_matches_delete_own" ON saved_matches
   FOR DELETE USING (
     auth.uid() = user_id
-    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+    OR is_admin()
   );
 
 -- =============================================================

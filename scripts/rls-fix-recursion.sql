@@ -1,12 +1,12 @@
 -- =============================================================
--- RLS Fix v3: Corrige recursao infinita nas policies
+-- RLS Fix: Resolve recursao infinita nas policies da profiles
 -- Causa: EXISTS (SELECT 1 FROM profiles ...) dentro de uma
--- policy da profiles causa recursao. Usar is_admin() SECURITY
--- DEFINER quebra o ciclo.
+-- policy da propria tabela profiles causa recursao infinita.
+-- Solucao: Funcao SECURITY DEFINER que ignora RLS.
 -- Execute no Supabase SQL Editor
 -- =============================================================
 
--- 0. Funcao SECURITY DEFINER (ignora RLS, sem recursao)
+-- 1. Funcao que verifica admin sem gatilhar RLS recursivo
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN
 LANGUAGE SQL
@@ -18,7 +18,10 @@ AS $$
   );
 $$;
 
--- 1. Profiles: admin pode SELECT/UPDATE qualquer perfil
+-- =============================================================
+-- 2. Profiles
+-- =============================================================
+
 DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
 CREATE POLICY "profiles_select_own" ON profiles
   FOR SELECT USING (
@@ -33,7 +36,10 @@ CREATE POLICY "profiles_update_own" ON profiles
     OR is_admin()
   );
 
--- 2. Cars: admin write
+-- =============================================================
+-- 3. Cars
+-- =============================================================
+
 DROP POLICY IF EXISTS "cars_insert_admin" ON cars;
 CREATE POLICY "cars_insert_admin" ON cars
   FOR INSERT WITH CHECK (is_admin());
@@ -46,7 +52,10 @@ DROP POLICY IF EXISTS "cars_delete_admin" ON cars;
 CREATE POLICY "cars_delete_admin" ON cars
   FOR DELETE USING (is_admin());
 
--- 3. Saved matches: admin pode deletar qualquer match (necessário ao excluir carro)
+-- =============================================================
+-- 4. Saved matches
+-- =============================================================
+
 DROP POLICY IF EXISTS "saved_matches_delete_own" ON saved_matches;
 CREATE POLICY "saved_matches_delete_own" ON saved_matches
   FOR DELETE USING (
