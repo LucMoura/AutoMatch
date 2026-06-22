@@ -1,6 +1,6 @@
 {
   "installCommand": "bash scripts/install.sh",
-  "buildCommand": "node scripts/patch-backend.mjs && cd AutoMatch-Back && npm run build && cd ../AutoMatch-Front && npm run build -- --output-path=../dist --base-href=/",
+  "buildCommand": "node scripts/patch-backend.mjs && cd AutoMatch-Back && npm run build && cd .. && node scripts/patch-frontend.mjs && cd AutoMatch-Front && npm run build -- --output-path=../dist --base-href=/",
   "outputDirectory": "dist",
   "functions": {
     "api/index.ts": {
