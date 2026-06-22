@@ -1,6 +1,6 @@
 {
-  "installCommand": "git submodule update --init --recursive --depth 1",
-  "buildCommand": "cd AutoMatch-Back && npm ci && npm run build && cd ../AutoMatch-Front && npm ci && npm run build -- --output-path=../dist --base-href=/",
+  "installCommand": "rm -rf AutoMatch-Back AutoMatch-Front && git clone https://github.com/AugustoSodre/AutoMatch-Back.git AutoMatch-Back && git clone https://github.com/AugustoSodre/AutoMatch-Front.git AutoMatch-Front && cd AutoMatch-Back && npm ci && cd ../AutoMatch-Front && npm ci",
+  "buildCommand": "node scripts/patch-backend.mjs && cd AutoMatch-Back && npm run build && cd ../AutoMatch-Front && npm run build -- --output-path=../dist --base-href=/",
   "outputDirectory": "dist",
   "functions": {
     "api/index.ts": {
