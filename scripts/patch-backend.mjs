@@ -38,7 +38,101 @@ patchFile("AutoMatch-Back/src/index.ts", [
 ]);
 
 // =============================================
-// 2. routes/matches.ts — make recommendations public (no requireAuth)
+// 2. middleware/auth.ts — hybrid auth (tenta service key, fallback decode JWT)
+// =============================================
+patchFile("AutoMatch-Back/src/middleware/auth.ts", [
+  [
+    `import supabaseAdmin from "../lib/supabase.js";`,
+    `import supabaseAdmin, { createAuthClient } from "../lib/supabase.js";`,
+  ],
+  [
+    `export async function requireAuth(`,
+    `function decodeJwtPayload(
+  token: string,
+): { sub?: string; exp?: number } | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf8"),
+    );
+    if (payload.exp && Date.now() >= payload.exp * 1000) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function requireAuth(`,
+  ],
+  [
+    `  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      res.status(401).json({ error: "Token inválido ou expirado" });
+      return;
+    }
+
+    req.userId = user.id;
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    req.userRole = (profile as { role: string } | null)?.role || "USER";
+    next();
+  } catch {
+    res.status(401).json({ error: "Token inválido ou expirado" });
+  }`,
+    `  // Strategy 1: try admin client (needs SUPABASE_SERVICE_KEY)
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      req.userId = user.id;
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      req.userRole = (profile as { role: string } | null)?.role || "USER";
+      next();
+      return;
+    }
+  } catch (e) {
+    console.warn("[Auth] Service-role auth failed, falling back to JWT decode:", e);
+  }
+
+  // Strategy 2: decode JWT locally (Vercel without SUPABASE_SERVICE_KEY)
+  const payload = decodeJwtPayload(token);
+  if (!payload?.sub) {
+    res.status(401).json({ error: "Token inválido ou expirado" });
+    return;
+  }
+
+  req.userId = payload.sub;
+  req.userRole = "USER";
+
+  try {
+    const authClient = createAuthClient(token);
+    const { data: profile } = await authClient
+      .from("profiles")
+      .select("role")
+      .eq("id", payload.sub)
+      .single();
+    req.userRole = (profile as { role: string } | null)?.role || "USER";
+  } catch (err) {
+    console.error("[Auth] Error fetching profile with anon client:", err);
+  }
+
+  next();`,
+  ],
+]);
+
+// =============================================
+// 3. routes/matches.ts — make recommendations public (no requireAuth)
 // =============================================
 patchFile("AutoMatch-Back/src/routes/matches.ts", [
   [
